@@ -1,0 +1,35 @@
+# Django project files and directories
+.env
+db.sqlite3
+local_settings.py
+venv/
+static/
+tmp/
+media/
+
+# Byte-compiler / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.dll
+
+# Python test files
+*.swp
+.hypothesis/
+.pytest_cache/
+
+# Documentation files
+build/
+dist/
+docs/
+htmlcov/
+.nox/
+
+# Other ignored files
+.DS_Store
+Thumbs.db
+.Spotlight-V100
+
+# Ignore Docker files
+Dockerfile
+docker-compose.yml

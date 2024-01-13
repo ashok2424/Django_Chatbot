@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% block styles %}
+
+<style>
+    body, html {
+      height: 100%;
+      background-color:#43474b;
+    }
+
+    .btn-send {
+        border-radius: 12x;
+        font-weight: bold; 
+    }
+  
+    .chat-container {
+
+        height: 100%;
+        display: flex;
+        flex-direction: column; 
+
+        max-width: 600px;
+        margin: auto;
+        border-radius: 20px; 
+        border: 1.5px solid #ccc;
+        overflow-y: auto
+    }
+    
+    .card-header{
+          font-size: 1.5em; 
+          text-align: center; 
+          font-weight: bold; 
+    }
+
+    .flex-grow-1{
+        overflow: auto;
+    }
+
+    .form-control message-input{
+        border-radius:10px;
+    }
+    .messages-box {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom:10px;
+      height: 100%;
+      background-color:#c3c7cb;
+    }
+
+    .messages-list {
+      padding-left: 0;
+    }
+
+    .message {
+      margin-bottom: 15px;
+      list-style: none;
+    }
+
+    .message-text {
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .message-form {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: ##939ca5;
+      margin: auto;
+      max-width: 600px; 
+      border: 1.5px solid #ccc;
+      margin-top: 10px;
+    }
+
+    .message-input {
+      flex: 1;
+      border-radius: 0;
+      border-right: none;
+    }
+
+    .received{
+        border-radius:10px;
+        background-color: #f1f0f0;
+        align-self: flex-start;
+    }
+
+    .sent{
+        border-radius:10px;
+        background-color: #dcf8c6;
+        align-self: flex-end;
+    }
+    
+  </style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="chat-container " >
+    <div class="card flex-grow-1">
+
+      <div class="card-header bg-secondary text-white" >Chat</div>
+  
+      {% if user.is_authenticated %}
+      <div class="card-header bg-secondary text-white"><b>Welcome {{user.username}} | </b>  <a style="color: yellow;" href="logout">Logout</a></div>
+      {% else %}
+      <div class="card-header bg-secondary text-white"><a style="color: yellow" href="login">Login</a>   <a style="color: yellow;" href="register">Register</a></div>
+      {% endif %}
+       
+        <div class="card-body messages-box">
+        
+            <ul class="list-unstyled messages-list">
+
+                <!--Showing a default start message of Chatbot-->
+                <li class="message received">
+                    <div class="message-text">
+
+                        <div class="message-sender">
+                            <b>Chatbot</b>
+                        </div>
+
+                        <div class="message-content">
+                            Hi {{user.username}}! I'm your AI assistant. Feel free to pose any queries.
+                        </div>
+
+                    </div>
+                </li> 
+
+                {% for chat in chats %}
+                    {% if chat.user == request.user %}
+
+                        <!-- Message from the User sent to chatbot-->
+                        <li class="message sent">
+                            <div class="message-text">
+                                <div class="message-sender">
+                                <b>You</b>
+                                </div>
+                                <div class="message-content">
+                                {{chat.message}}
+                                </div>
+                            </div>
+                        </li>
+
+                        <!-- Message from the chatbot returned to user-->
+                        <li class="message received">
+                            <div class="message-text">
+                                <div class="message-sender">
+                                <b>Chatbot</b>
+                                </div>
+                                <div class="message-content">
+                                {{chat.response}}
+                                </div>
+                            </div>
+                        </li>
+        
+                    {% endif %}
+                {% endfor %}
+
+            </ul>
+        
+        </div>
+    </div>
+  
+    <form class="message-form ">
+      {%csrf_token%}
+      <div class="input-group">
+        <input type="text" class="form-control message-input" placeholder="Type your message...">
+        <div class="input-group-append">
+          <button type="submit" class="btn btn-secondary btn-send">Send</button>
+        </div>
+      </div>
+    </form>
+
+</div>
+
+
+
+<script>
+    const messagesContainer = document.querySelector('.flex-grow-1');
+
+    // Check if the content overflows
+    if (messagesContainer.scrollHeight > messagesContainer.clientHeight) {
+        messagesContainer.style.overflow = 'scroll';
+    }
+
+    const messagesList = document.querySelector('.messages-list');
+    const messageForm = document.querySelector('.message-form');
+    const messageInput = document.querySelector('.message-input');
+    const sendButton = document.querySelector('.btn-send');
+  
+    messageForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+  
+      const message = messageInput.value.trim();
+      if (message.length === 0) {
+        return;
+      }
+  
+      // Disable the send button and show a loading indicator
+      sendButton.disabled = true;
+      sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ';
+  
+      try {
+        //create an li for user message and append it to the messageList
+        const messageItem = document.createElement('li');
+        messageItem.classList.add('message', 'sent');
+        messageItem.innerHTML = `
+          <div class="message-text">
+            <div class="message-sender">
+              <b>You</b>
+            </div>
+            <div class="message-content">
+              ${message}
+            </div>
+          </div>`;
+        messagesList.appendChild(messageItem);
+  
+        // After sending the message, scroll to the bottom of the chat container
+        const messagesContainer = document.querySelector('.messages-box');
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        messageInput.value = '';
+
+
+        //fetch the response from openAI
+
+        const response = await fetch('', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            'csrfmiddlewaretoken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'message': message
+          })
+        });
+
+        const data = await response.json();
+
+        //create an li for chatbot message received and append it to the messageList
+
+        const messageItemResponse = document.createElement('li');
+        messageItemResponse.classList.add('message', 'received');
+        messageItemResponse.innerHTML = `
+          <div class="message-text">
+            <div class="message-sender">
+              <b>Chatbot</b>
+            </div>
+            <div class="message-content">
+              ${data.response}
+            </div>
+          </div>`;
+        messagesList.appendChild(messageItemResponse);
+
+        // After getting the message, scroll to the bottom of the chat container
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        } catch (error) {
+            {% comment %} console.error('Error:', error); {% endcomment %}
+        } finally {
+            // Enable the send button and set it back to its original state
+            sendButton.disabled = false;
+            sendButton.innerHTML = 'Send';
+        }
+    });
+  </script>
+  
+{% endblock %}

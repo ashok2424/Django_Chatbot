@@ -1,0 +1,8 @@
+# Django==5.0.1
+# openai==1.7.1
+# python-dotenv==1.0.0
+
+Django
+openai
+python-dotenv
+mysqlclient
